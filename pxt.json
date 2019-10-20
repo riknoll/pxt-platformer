@@ -1,0 +1,26 @@
+{
+    "name": "slope-test",
+    "dependencies": {
+        "device": "*",
+        "animation": "*"
+    },
+    "description": "",
+    "files": [
+        "main.ts",
+        "physics.ts",
+        "projectile.ts",
+        "assets.ts",
+        "animate.ts"
+    ],
+    "preferredEditor": "tsprj",
+    "targetVersions": {
+        "branch": "v0.14.9",
+        "tag": "v0.14.9",
+        "commits": "https://github.com/microsoft/pxt-arcade/commits/aef4a4d5453f6bde5ba4cc774ed94f146deb6d68",
+        "target": "0.14.9",
+        "pxt": "5.21.14"
+    },
+    "testFiles": [
+        "test.ts"
+    ]
+}
