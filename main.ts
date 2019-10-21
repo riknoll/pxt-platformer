@@ -36,6 +36,24 @@ function slopesTest() {
         1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
     `);
 
+    // util.enableSlopePhysics(img`
+    //     1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+    //     1 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 1
+    //     1 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 1
+    //     1 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 1
+    //     1 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 1
+    //     1 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 1
+    //     1 . . . . . . . . . . . . . 5 4 . . . . . . . . . . . . . . . . . . . . . . . 1
+    //     1 . . . . . . . . . . . . 5 a b 4 . . . . . . . . . . . . . . . . . . . . . . 1
+    //     1 . . . . . . . . . . . 5 a . . b 4 . . . . . . . . . . . . . . . . . . . . . 1
+    //     1 . . . . . . . . . . 5 a . . . . b 4 . . . . . . . . . . . . . . . . . . . . 1
+    //     1 . . . . . . . . . 5 a . . . . . . b 4 . . . . . . . . . . . . . . . . . . . 1
+    //     1 . . . . . . . . 5 a . . . . . . . . b 4 . . . . . . . . . . . . . . . . . . 1
+    //     1 . . . . . . . 5 a . . . . . . . . . . b 4 . . . . . . . . . . . . . . . . . 1
+    //     1 . . . . . . 5 a . . . . . . . . . . . . b 4 . . . . . . . . . . . . . . . . 1
+    //     1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+    // `)
+
     const player = sprites.create(img`
         3 3 3
         3 3 3
@@ -70,29 +88,29 @@ function slopesTest() {
         player.vy = -100;
     })
 
-    // game.onUpdateInterval(20, function () {
-    //     const p = new util.Projectile(img`
-    //         . 2 .
-    //         2 2 2
-    //         . 2 .
-    //     `, 40, 30);
+    game.onUpdateInterval(20, function () {
+        const p = new util.Projectile(img`
+            . 2 .
+            2 2 2
+            . 2 .
+        `, 40, 30);
 
-    //     const angle = (Math.randomRange(0, 360) / 180) * Math.PI;
-    //     const speed = 40;
-    //     p.setVelocity(speed * Math.cos(angle), speed * Math.sin(angle))
-    // })
+        const angle = (Math.randomRange(0, 360) / 180) * Math.PI;
+        const speed = 40;
+        p.setVelocity(speed * Math.cos(angle), speed * Math.sin(angle))
+    })
 
-    // game.onUpdateInterval(20, function () {
-    //     const p = new util.Projectile(img`
-    //         . 2 .
-    //         2 2 2
-    //         . 2 .
-    //     `, 70, 60);
+    game.onUpdateInterval(20, function () {
+        const p = new util.Projectile(img`
+            . 2 .
+            2 2 2
+            . 2 .
+        `, 70, 60);
 
-    //     const angle = (Math.randomRange(0, 360) / 180) * Math.PI;
-    //     const speed = 40;
-    //     p.setVelocity(speed * Math.cos(angle), speed * Math.sin(angle))
-    // })
+        const angle = (Math.randomRange(0, 360) / 180) * Math.PI;
+        const speed = 40;
+        p.setVelocity(speed * Math.cos(angle), speed * Math.sin(angle))
+    })
 
     game.onShade(function () {
         if (player.flags & util.SpriteStateFlag.CollisionBottom) {
