@@ -227,7 +227,7 @@ namespace util {
 
             this.scale = scale;
 
-            this.vx = Fx8(10);
+            this.vx = Fx8(70);
             this.vy = Fx8(0);
 
             const engine = SlopePhysics.getInstance();
@@ -267,8 +267,8 @@ namespace util {
 
                 if (this.riders.length) {
                     for (const r of this.riders) {
-                        if (dx2) r.x += dx2;
-                        if (dy2) r.y += dy2
+                        if (dx2) r._x = Fx8(r.left + dx2);
+                        if (dy2) r._y = Fx8(r.top + dy2)
                     }
                 }
             }
@@ -387,7 +387,7 @@ namespace util {
                 for (const p of this.platforms) {
                     if (collision(s, xComp, yComp, this.scale, p.map, Fx.toInt(p.left), Fx.toInt(p.top))) {
                         if (yComp > 0) p.addRider(s);
-                        break;;
+                        break;
                     }
 
                     // if (yComp < 0 && collision(s, xComp, yComp, this.scale, p.map, Fx.toInt(p.left), Fx.toInt(p.top) + 1)) {
@@ -641,7 +641,7 @@ namespace util {
 
 
         if (!dontMove) {
-            if (xComp > 0) {
+            if (xComp >= 0) {
                 // Moving right
 
                 offset = testRight(
@@ -655,9 +655,8 @@ namespace util {
                     s.vx = 0;
                 }
             }
-            else if (xComp < 0) {
+            if (xComp <= 0) {
                 // Moving left
-                console.log(`left:${s.left - ox} aligned:${leftAligned}`)
                 offset = testLeft(
                     map.getPixel(leftAligned >> scale, rowAligned >> scale),
                     (s.left - ox) - leftAligned,
