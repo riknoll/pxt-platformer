@@ -104,6 +104,6 @@ namespace util {
     }
 
     export function logState(state: number) {
-        console.log(`bottom:${!!(state & SpriteStateFlag.CollisionBottom) ? 1 : 0} top:${!!(state & SpriteStateFlag.CollisionTop) ? 1 : 0} left:${!!(state & SpriteStateFlag.CollisionLeft) ? 1 : 0} right:${!!(state & SpriteStateFlag.CollisionRight) ? 1 : 0} move-right:${!!(state & SpriteStateFlag.MovingRight) ? 1 : 0} move-left:${!!(state & SpriteStateFlag.MovingLeft) ? 1 : 0} jump:${!!(state & SpriteStateFlag.Jumping) ? 1 : 0} fall:${!!(state & SpriteStateFlag.Falling) ? 1 : 0}`)
+        // console.log(`bottom:${!!(state & SpriteStateFlag.CollisionBottom) ? 1 : 0} top:${!!(state & SpriteStateFlag.CollisionTop) ? 1 : 0} left:${!!(state & SpriteStateFlag.CollisionLeft) ? 1 : 0} right:${!!(state & SpriteStateFlag.CollisionRight) ? 1 : 0} move-right:${!!(state & SpriteStateFlag.MovingRight) ? 1 : 0} move-left:${!!(state & SpriteStateFlag.MovingLeft) ? 1 : 0} jump:${!!(state & SpriteStateFlag.Jumping) ? 1 : 0} fall:${!!(state & SpriteStateFlag.Falling) ? 1 : 0}`)
     }
 }

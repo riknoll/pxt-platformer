@@ -10,7 +10,9 @@
         "physics.ts",
         "projectile.ts",
         "assets.ts",
-        "animate.ts"
+        "animate.ts",
+        "updater.ts",
+        "trigger.ts"
     ],
     "preferredEditor": "tsprj",
     "targetVersions": {

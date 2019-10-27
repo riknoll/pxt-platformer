@@ -15,6 +15,7 @@ namespace util {
         MovingRight = 1 << 21,
         Jumping = 1 << 22,
         Falling = 1 << 23,
+        NoCollide = 1 << 24,
 
         MovementFlags =
         CollisionLeft | CollisionRight | CollisionBottom |
@@ -227,7 +228,7 @@ namespace util {
 
             this.scale = scale;
 
-            this.vx = Fx8(70);
+            this.vx = Fx8(0);
             this.vy = Fx8(0);
 
             const engine = SlopePhysics.getInstance();
@@ -274,8 +275,17 @@ namespace util {
             }
 
             if (this.riders.length) {
-                this.riders = this.riders.filter(r => collision(r, 0, 1, this.scale, this.map, Fx.toInt(this.left), Fx.toInt(this.top) - 1, true))
+                this.riders = this.riders.filter(r => !!collision(r, 0, 1, this.scale, this.map, Fx.toInt(this.left), Fx.toInt(this.top) - 1, true))
             }
+        }
+
+        setVelocity(vx: number, vy: number) {
+            this.vx = Fx8(vx);
+            this.vy = Fx8(vy);
+        }
+
+        overlapsSprite(s: Sprite) {
+            return overlaps(s, Fx.toInt(this.left), Fx.toInt(this.top), this.map.width << this.scale, this.map.height << this.scale);
         }
     }
 
@@ -291,6 +301,7 @@ namespace util {
         }
 
         protected map: Image;
+        protected spriteMap: sprites.SpriteMap;
         protected sprites: Sprite[];
         protected scale: TileScale;
         protected platforms: Platform[];
@@ -303,6 +314,7 @@ namespace util {
             this.scale = scale;
             this.platforms = [];
             this.projectiles = [];
+            this.spriteMap = new sprites.SpriteMap();
 
             if (!debug && false) {
                 debug = [0, 0, 0];
@@ -343,6 +355,9 @@ namespace util {
 
             const dtSec = Fx.idiv(dtf, 1000);
 
+            this.spriteMap.clear();
+            this.spriteMap.resizeBuckets(this.sprites);
+
             for (const s of this.sprites) {
                 s._vx = Fx.add(s._vx, Fx.mul(dtSec, s._ax));
                 s._vy = Fx.add(s._vy, Fx.mul(dtSec, s._ay));
@@ -352,6 +367,10 @@ namespace util {
                 // debug[0] = s.left;
                 // debug[1] = s.right;
                 // debug[2] = s.y + 2;
+
+                if (!(s.flags & SPRITE_CANNOT_COLLIDE)) {
+                    this.spriteMap.insertAABB(s);
+                }
             }
 
             const deadProjectiles = this.projectiles.filter(p => this.moveProjectile(p, Fx.mul(p.vx, dtSec), Fx.mul(p.vy, dtSec)))
@@ -363,11 +382,16 @@ namespace util {
             for (const p of this.platforms) {
                 p.move(Fx.mul(dtSec, p.vx), Fx.mul(dtSec, p.vy));
             }
+
+            this.spriteCollisions(this.sprites, game.currentScene().overlapHandlers.slice());
         }
 
 
         /** move a single sprite **/
         moveSprite(s: Sprite, dx: Fx8, dy: Fx8) {
+            s._lastX = s._x;
+            s._lastY = s._y;
+            
             const steps = 1 + Math.max(Fx.toInt(Fx.idiv(Fx.abs(dx), Math.min(s.width, 1 << (this.scale - 1)))), Fx.toInt(Fx.idiv(Fx.abs(dy), Math.min(s.height, 1 << (this.scale - 1)))));
 
             s.flags = clearAnimationState(s.flags)
@@ -384,7 +408,7 @@ namespace util {
 
                 if (collision(s, xComp, yComp, this.scale, this.map, 0, 0)) break;
 
-                for (const p of this.platforms) {
+                for (const p of this.platforms) {                    
                     if (collision(s, xComp, yComp, this.scale, p.map, Fx.toInt(p.left), Fx.toInt(p.top))) {
                         if (yComp > 0) p.addRider(s);
                         break;
@@ -440,7 +464,52 @@ namespace util {
 
         setMaxSpeed(speed: number) { }
 
-        overlaps(sprite: Sprite): Sprite[] { return []; }
+        overlaps(sprite: Sprite): Sprite[] {
+            return this.spriteMap.overlaps(sprite);
+        }
+
+        protected spriteCollisions(movedSprites: Sprite[], handlers: scene.OverlapHandler[]) {
+            control.enablePerfCounter("phys_collisions");
+            if (!handlers.length) return;
+
+            // sprites that have moved this step
+            for (const sprite of movedSprites) {
+                if (sprite.flags & SPRITE_CANNOT_COLLIDE) continue;
+                const overSprites = this.spriteMap.overlaps(sprite);
+
+                for (const overlapper of overSprites) {
+                    if (overlapper.flags & SPRITE_CANNOT_COLLIDE) continue;
+                    const thisKind = sprite.kind();
+                    const otherKind = overlapper.kind();
+
+                    // skip if no overlap event between these two kinds of sprites
+                    if (sprite._kindsOverlappedWith.indexOf(otherKind) === -1) continue;
+
+                    // Maintaining invariant that the sprite with the higher ID has the other sprite as an overlapper
+                    const higher = sprite.id > overlapper.id ? sprite : overlapper;
+                    const lower = higher === sprite ? overlapper : sprite;
+
+                    // if the two sprites are not currently engaged in an overlap event,
+                    // apply all matching overlap events
+                    if (higher._overlappers.indexOf(lower.id) === -1) {
+                        handlers
+                            .filter(h => (h.kind === thisKind && h.otherKind === otherKind)
+                                || (h.kind === otherKind && h.otherKind === thisKind)
+                            )
+                            .forEach(h => {
+                                higher._overlappers.push(lower.id);
+                                control.runInParallel(() => {
+                                    h.handler(
+                                        thisKind === h.kind ? sprite : overlapper,
+                                        thisKind === h.kind ? overlapper : sprite
+                                    );
+                                    higher._overlappers.removeElement(lower.id);
+                                });
+                            });
+                    }
+                }
+            }
+        }
     }
 
     export function enableSlopePhysics(map: Image) {
@@ -630,89 +699,61 @@ namespace util {
 
     /** move a single sprite **/
     function collision(s: Sprite, xComp: number, yComp: number, scale: number, map: Image, ox: number, oy: number, dontMove = false) {
+        if (s.flags & SpriteStateFlag.NoCollide) return false;
+        let didCollide: number;
+            horizontalCollision(s, xComp, scale, map, ox, oy, dontMove);
+            didCollide = verticalCollision(s, yComp, scale, map, ox, oy, dontMove);
+        // if (xComp === 0 || Math.abs(xComp) < Math.abs(yComp)) {
+        // }
+        // else {
+        //     didCollide = verticalCollision(s, yComp, scale, map, ox, oy, dontMove);
+        //     horizontalCollision(s, xComp, scale, map, ox, oy, dontMove);
+        // }
+        return didCollide;
+    }
+
+    function verticalCollision(s: Sprite, yComp: number, scale: number, map: Image, ox: number, oy: number, dontMove: boolean) {
         let offset: number;
-        let offset2: number;
 
-        // First check horizontal movement and bounce out of walls. Check
-        // using the vertical center line of the sprite
         let leftAligned = alignToScale(s.left - ox, scale);
-        let rightAligned = alignToScale(s.right - ox, scale);
-        let rowAligned = alignToScale(s.y + 2 - oy, scale);
-
-
-        if (!dontMove) {
-            if (xComp >= 0) {
-                // Moving right
-
-                offset = testRight(
-                    map.getPixel(rightAligned >> scale, rowAligned >> scale),
-                    (s.right - ox) - rightAligned,
-                    (s.y + 2 - oy) - rowAligned
-                );
-
-                if (offset) {
-                    s._x = Fx8(s.left - offset);
-                    s.vx = 0;
-                }
-            }
-            if (xComp <= 0) {
-                // Moving left
-                offset = testLeft(
-                    map.getPixel(leftAligned >> scale, rowAligned >> scale),
-                    (s.left - ox) - leftAligned,
-                    (s.y + 2 - oy) - rowAligned
-                );
-
-                if (offset) {
-                    s._x = Fx8(s.left + offset)
-                    s.vx = 0;
-                    leftAligned = alignToScale(s.left - ox, scale)
-                }
-            }
-        }
-
-        let didCollide = false;
+        let rightAligned = alignToScale(s.right - ox - 1, scale);
+        let rowAligned = alignToScale(s.bottom - oy - 1, scale);
 
         // Next check vertical movement using the left and right sides
         if (yComp > 0) {
             // Moving down
-            rowAligned = alignToScale(s.bottom - oy - 1, scale);
-            rightAligned = alignToScale(s.right - ox - 1, scale);
 
             offset = testDownward(
                 map.getPixel(leftAligned >> scale, rowAligned >> scale),
                 (s.left - ox) - leftAligned,
                 (s.bottom - oy) - rowAligned
             );
-            
 
-            offset2 = testDownward(
+
+            offset = Math.max(offset, testDownward(
                 map.getPixel(rightAligned >> scale, rowAligned >> scale),
                 (s.right - ox) - 1 - rightAligned,
                 (s.bottom - oy) - rowAligned
-            );
+            ))
 
-            if (offset || offset2) {
+            if (offset) {
                 if (!dontMove) {
-                    console.log(`offset-left:${(s.left - ox) - leftAligned} offset:${offset}`)
-                    s._y = Fx8(s.top - (Math.max(offset, offset2)))
+                    s._y = Fx8(s.top - offset)
                     s.vy = 0;
                     s.flags |= SpriteStateFlag.CollisionBottom
                 }
-
-                didCollide = true;
             }
 
             // Test to see if we are 1 pixel above the ground but not
             // overlapping
-            if (!didCollide) {
+            if (!offset) {
                 // If 1 pixel below the sprite is the next tile, shift rowAligned
                 if (alignToScale(s.bottom - oy, scale) != rowAligned) {
                     rowAligned = alignToScale(s.bottom - oy, scale);
 
-                    if (testDownward(map.getPixel(rightAligned >> scale, rowAligned >> scale), (s.right - ox) - 1 - rightAligned, 1) || 
+                    if (testDownward(map.getPixel(rightAligned >> scale, rowAligned >> scale), (s.right - ox) - 1 - rightAligned, 1) ||
                         testDownward(map.getPixel(leftAligned >> scale, rowAligned >> scale), (s.left - ox) - leftAligned, 1)) {
-                        
+
                         s.flags |= SpriteStateFlag.CollisionBottom
                     }
                 }
@@ -734,22 +775,65 @@ namespace util {
 
             rightAligned = alignToScale(s.right - ox - 1, scale);;
 
-            offset2 = testUpward(
+            offset = Math.max(offset, testUpward(
                 map.getPixel(rightAligned >> scale, rowAligned >> scale),
                 (s.right - ox) - 1 - rightAligned,
                 (s.top - oy) - rowAligned
-            );
+            ));
 
-            if (offset || offset2) {
+            if (offset) {
                 if (!dontMove) {
-                    s._y = Fx8(s.top + Math.max(offset, offset2) - 2)
+                    s._y = Fx8(s.top + offset - 2)
                     s.vy = 0;
                 }
-                didCollide = true;
             }
         }
 
-        return didCollide;
+        return offset;
+    }
+
+    function horizontalCollision(s: Sprite, xComp: number, scale: number, map: Image, ox: number, oy: number, dontMove: boolean) {
+        let offset: number;
+
+        // First check horizontal movement and bounce out of walls. Check
+        // using the vertical center line of the sprite
+        let leftAligned = alignToScale(s.left - ox, scale);
+        let rightAligned = alignToScale(s.right - ox, scale);
+        let rowAligned = alignToScale(s.y + 2 - oy, scale);
+
+        if (xComp >= 0) {
+            // Moving right
+
+            offset = testRight(
+                map.getPixel(rightAligned >> scale, rowAligned >> scale),
+                (s.right - ox) - rightAligned,
+                (s.y + 2 - oy) - rowAligned
+            );
+
+            if (offset) {
+                if (!dontMove) {
+                    s._x = Fx8(s.left - offset);
+                    s.vx = 0;
+                }
+            }
+        }
+        if (xComp <= 0) {
+            // Moving left
+            offset = testLeft(
+                map.getPixel(leftAligned >> scale, rowAligned >> scale),
+                (s.left - ox) - leftAligned,
+                (s.y + 2 - oy) - rowAligned
+            );
+
+            if (offset) {
+                if (!dontMove) {
+                    s._x = Fx8(s.left + offset)
+                    s.vx = 0;
+                }
+            }
+        }
+
+        return offset;
     }
 
     function projectileCollision(p: Projectile, xComp: number, yComp: number, scale: number, map: Image, ox: number, oy: number) {
