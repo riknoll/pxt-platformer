@@ -181,16 +181,6 @@ namespace util {
         5 5 6 6 7 7 8 8
     `
 
-    const horizontalMap = img`
-        0 0 0 0 8 8 8 8
-        8 8 8 8 0 0 0 0
-        1 2 3 4 5 6 7 8
-        0 0 0 0 2 4 6 8
-        2 4 6 8 8 8 8 8
-        8 7 6 5 4 3 2 1
-        8 6 4 2 0 0 0 0
-        8 8 8 8 8 6 4 2
-    `;
 
     // I messed up the import so the sprites are out of order
     const remap = [0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15]
@@ -609,91 +599,13 @@ namespace util {
     }
 
     function testRight(geometry: number, offsetX: number, offsetY: number) {
-        let row = 0;
-        switch (geometry) {
-            // Steep slope (bottom left)
-            case 4:
-            // Slight slope (bottom left)
-            case 6:
-            // Slight slope (bottom left, upper half)
-            case 8:
-            // Steep slope (top left)
-            case 10:
-            // Slight slope (top left)
-            case 12:
-            // Slight slope (top left, lower half)
-            case 14:
-            // Empty
-            case 0:
-                return 0;
-
-            // Solid
-            case 1:
-                return offsetX;
-
-            // Bottom half solid
-            case 2: row = 0; break;
-            // Top half solid
-            case 3: row = 1; break;
-            // Steep slope (bottom right)
-            case 5: row = 2; break;
-            // Slight slope (bottom right)
-            case 7: row = 3; break;
-            // Slight slope (bottom right, upper half)
-            case 9: row = 4; break;
-            // Steep slope (top right)
-            case 11: row = 5; break;
-            // Slight slope (top right)
-            case 13: row = 6; break;
-            // Slight slope (top right, lower half)
-            case 15: row = 7; break;
-        }
-
-        return Math.max(offsetX - (8 - horizontalMap.getPixel(offsetY, row)), 0);
+        if (geometry === 1) return offsetX;
+        return 0;
     }
 
     function testLeft(geometry: number, offsetX: number, offsetY: number) {
-        let row = 0;
-        switch (geometry) {
-            // Steep slope (bottom right)
-            case 5:
-            // Slight slope (bottom right)
-            case 7:
-            // Slight slope (bottom right, upper half)
-            case 9:
-            // Steep slope (top right)
-            case 11:
-            // Slight slope (top right)
-            case 13:
-            // Slight slope (top right, lower half)
-            case 15:
-            // Empty
-            case 0:
-                return 0;
-
-            // Solid
-            case 1:
-                return 8 - offsetX;
-
-            // Bottom half solid
-            case 2: row = 0; break;
-            // Top half solid
-            case 3: row = 1; break;
-            // Steep slope (bottom left)
-            case 4: row = 2; break;
-            // Slight slope (bottom left)
-            case 6: row = 3; break;
-            // Slight slope (bottom left, upper half)
-            case 8: row = 4; break;
-            // Steep slope (top left)
-            case 10: row = 5; break;
-            // Slight slope (top left)
-            case 12: row = 6; break;
-            // Slight slope (top left, lower half)
-            case 14: row = 7; break;
-        }
-
-        return Math.max(horizontalMap.getPixel(offsetY, row) - offsetX, 0);
+        if (geometry === 1) return 8 - offsetX;
+        return 0;
     }
 
 
@@ -801,7 +713,7 @@ namespace util {
         let rightAligned = alignToScale(s.right - ox, scale);
         let rowAligned = alignToScale(s.y + 2 - oy, scale);
 
-        if (xComp >= 0) {
+        if (xComp > 0) {
             // Moving right
 
             offset = testRight(
@@ -817,7 +729,7 @@ namespace util {
                 }
             }
         }
-        if (xComp <= 0) {
+        if (xComp < 0) {
             // Moving left
             offset = testLeft(
                 map.getPixel(leftAligned >> scale, rowAligned >> scale),
