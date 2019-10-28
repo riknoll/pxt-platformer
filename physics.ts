@@ -613,7 +613,7 @@ namespace util {
     function collision(s: Sprite, xComp: number, yComp: number, scale: number, map: Image, ox: number, oy: number, dontMove = false) {
         if (s.flags & SpriteStateFlag.NoCollide) return false;
         let didCollide: number;
-            horizontalCollision(s, xComp, scale, map, ox, oy, dontMove);
+            horizontalCollision(s, xComp, yComp, scale, map, ox, oy, dontMove);
             didCollide = verticalCollision(s, yComp, scale, map, ox, oy, dontMove);
         // if (xComp === 0 || Math.abs(xComp) < Math.abs(yComp)) {
         // }
@@ -704,14 +704,15 @@ namespace util {
         return offset;
     }
 
-    function horizontalCollision(s: Sprite, xComp: number, scale: number, map: Image, ox: number, oy: number, dontMove: boolean) {
+    function horizontalCollision(s: Sprite, xComp: number, yComp: number, scale: number, map: Image, ox: number, oy: number, dontMove: boolean) {
         let offset: number;
 
         // First check horizontal movement and bounce out of walls. Check
         // using the vertical center line of the sprite
+        const y = (yComp > 0 ? s.y - 2 : s.y + 2) - oy;
         let leftAligned = alignToScale(s.left - ox, scale);
         let rightAligned = alignToScale(s.right - ox, scale);
-        let rowAligned = alignToScale(s.y + 2 - oy, scale);
+        let rowAligned = alignToScale(y, scale);
 
         if (xComp > 0) {
             // Moving right
@@ -719,7 +720,7 @@ namespace util {
             offset = testRight(
                 map.getPixel(rightAligned >> scale, rowAligned >> scale),
                 (s.right - ox) - rightAligned,
-                (s.y + 2 - oy) - rowAligned
+                y - rowAligned
             );
 
             if (offset) {
@@ -734,7 +735,7 @@ namespace util {
             offset = testLeft(
                 map.getPixel(leftAligned >> scale, rowAligned >> scale),
                 (s.left - ox) - leftAligned,
-                (s.y + 2 - oy) - rowAligned
+                y - rowAligned
             );
 
             if (offset) {
