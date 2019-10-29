@@ -198,10 +198,10 @@ function slopesTest() {
     makeElevator(84, 13, 10, false);
     makeElevator(97, 3, 10, true);
 
-    circularPlatform(80, 60, 30, 0);
-    circularPlatform(80, 60, 30, 90);
-    circularPlatform(80, 60, 30, 180);
-    circularPlatform(80, 60, 30, 270);
+    const slices = 4;
+    for (let i = 0; i < slices; i++) {
+        circularPlatform(80, 60, 30, i * (360 / slices));
+    }
 }
 
 function makeFallingPlatform(col: number, row: number) {
@@ -238,7 +238,7 @@ function makeElevator(col: number, row: number, heightInTiles: number, isUp: boo
             else if (player.right >= right) {
                 player.right = right - 1
             }
-            p.setVelocity(0, isUp ? 75 : -75);
+            p.setVelocity(0, isUp ? 40 : -40);
             moving = true;
         }, 200);
         t.stop();

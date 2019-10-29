@@ -1,5 +1,5 @@
 {
-    "name": "slope-test",
+    "name": "platformer-package-demo",
     "dependencies": {
         "device": "*",
         "animation": "*"
